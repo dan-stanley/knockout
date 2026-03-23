@@ -13,14 +13,7 @@ const schema = a.schema({
   }).authorization(allow => [
     allow.owner(),
     allow.authenticated().to(['read']),
-  ]),
-
-  GameResult: a.model({
-    teamName: a.string(),
-    hasWon: a.boolean(),
-    hasLost: a.boolean(),
-    status: a.string(),
-  }).authorization(allow => [allow.authenticated()]),
+  ])
 });
 
 export type Schema = ClientSchema<typeof schema>;
