@@ -1,0 +1,268 @@
+.make-picks-container {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 1rem;
+}
+
+.create-entry {
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.create-entry input {
+    padding: 0.5rem;
+    width: 300px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    background: #f9f9f9;
+    color: #222;
+}
+
+.create-entry button {
+    padding: 0.5rem 1rem;
+    background: #4da6ff;
+    border: none;
+    color: white;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.create-entry button:hover {
+    background: #3388dd;
+}
+
+.entry-selector select {
+    padding: 0.5rem;
+    background: #f9f9f9;
+    color: #222;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+}
+
+.entry-stats {
+    margin-top: 0.5rem;
+    color: #666;
+}
+
+.day-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 2rem 0;
+    justify-content: center;
+}
+
+.day-selector button {
+    padding: 0.5rem 1rem;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    color: #555;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.day-selector button.active {
+    background: #ff9900;
+    color: white;
+    border-color: #ff9900;
+    font-weight: bold;
+}
+
+.day-selector button.day-locked {
+    background: #f5f5f5;
+    border-color: #ddd;
+    color: #bbb;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.day-selector button.day-locked:hover {
+    background: #f5f5f5;
+    border-color: #ddd;
+}
+
+.team-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+/* Matchup card grid */
+.matchup-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin: 1rem 0;
+}
+
+.matchup-card {
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.matchup-time {
+    text-align: center;
+    font-size: 0.65rem;
+    color: #888;
+    padding: 4px 0 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.matchup-team {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 0.85rem;
+}
+
+.matchup-team:hover {
+    background: #f0f0f0;
+}
+
+.matchup-team.picked {
+    background: rgba(0, 170, 0, 0.15);
+    color: #007700;
+    font-weight: bold;
+}
+
+.matchup-logo {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.matchup-at {
+    text-align: center;
+    color: #bbb;
+    font-size: 0.7rem;
+    padding: 0;
+    line-height: 1;
+}
+
+/* 2 columns on mobile */
+@media (max-width: 600px) {
+    .matchup-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.team-card {
+    background: #fff;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    padding: 0.75rem 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.team-card:hover {
+    border-color: #aaa;
+    background: #f5f5f5;
+}
+
+.team-card.selected {
+    border-color: #00aa00;
+    background: rgba(0, 170, 0, 0.1);
+    color: #007700;
+    font-weight: bold;
+}
+
+.team-logo {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+.team-name {
+    font-size: 0.8rem;
+    line-height: 1.1;
+}
+
+.submit-button {
+    width: 100%;
+    padding: 1rem;
+    background: linear-gradient(135deg, #00b300, #008000);
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-top: 2rem;
+}
+
+.submit-button:disabled {
+    background: #555;
+    cursor: not-allowed;
+    color: #888;
+}
+
+.day-selector button.day-submitted {
+    background: #e8f5e9;
+    border-color: #66bb6a;
+    color: #2e7d32;
+}
+
+.pick-status-message {
+    text-align: center;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin: 1rem 0;
+    font-size: 0.95rem;
+}
+
+.locked-message {
+    background: rgba(255, 50, 50, 0.06);
+    border: 1px solid #ff6666;
+    color: #cc3333;
+}
+
+.submitted-message {
+    background: rgba(0, 170, 0, 0.06);
+    border: 1px solid #66bb6a;
+    color: #2e7d32;
+}
+
+.submitted-picks-view h3 {
+    margin: 1rem 0;
+    font-size: 1rem;
+    color: #555;
+}
+
+.pick-won-card {
+    border-color: #00cc00 !important;
+    background: rgba(0, 204, 0, 0.15) !important;
+}
+
+.pick-lost-card {
+    border-color: #ff3333 !important;
+    background: rgba(255, 51, 51, 0.1) !important;
+    opacity: 0.6;
+}
+
+.pick-result {
+    font-size: 0.7rem;
+    font-weight: bold;
+    margin-top: 2px;
+}

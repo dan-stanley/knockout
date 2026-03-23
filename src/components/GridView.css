@@ -1,0 +1,102 @@
+.grid-view-container {
+    max-width: 100%;
+    margin: 0.5rem auto;
+    padding: 0.5rem;
+}
+
+.table-responsive {
+    overflow-x: auto;
+    background: #fff;
+    border-radius: 6px;
+    padding: 0.25rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e0e0e0;
+}
+
+.standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.8rem;
+}
+
+.standings-table th,
+.standings-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+.standings-table th {
+    background-color: #f5f5f5;
+    color: #cc6600;
+    white-space: nowrap;
+    font-weight: bold;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.standings-table tbody tr:hover {
+    background-color: rgba(255, 153, 0, 0.06);
+}
+
+.eliminated-row {
+    opacity: 0.5;
+    background-color: rgba(255, 0, 0, 0.03);
+}
+
+.entry-name-cell {
+    font-weight: bold;
+    white-space: nowrap;
+    font-size: 0.75rem;
+}
+
+.status-alive {
+    color: #00aa00;
+    font-weight: bold;
+    font-size: 0.7rem;
+}
+
+.status-eliminated {
+    color: #cc3333;
+    font-weight: bold;
+    font-size: 0.7rem;
+}
+
+.picks-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2px;
+}
+
+.pick-item {
+    background: #f5f5f5;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    white-space: nowrap;
+    border: 1px solid #ddd;
+    text-align: center;
+}
+
+.no-pick {
+    color: #bbb;
+    font-size: 0.7rem;
+}
+
+.pick-won {
+    border-color: #00aa00;
+    background-color: rgba(0, 170, 0, 0.1);
+    color: #007700;
+}
+
+.pick-lost {
+    border-color: #cc3333;
+    background-color: rgba(255, 51, 51, 0.08);
+    color: #cc3333;
+    text-decoration: line-through;
+}
