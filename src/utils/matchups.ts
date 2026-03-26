@@ -45,7 +45,7 @@ const shortenTeamName = (displayName: string): string => {
         'Red Foxes', 'Bonnies', 'Flyers', 'Explorers',
         'Mocs', 'Catamounts', 'Terriers', 'Spiders',
         'Retrievers', 'Bison', 'Penguins', 'Chippewas',
-        'Golden Flashes', 'Bobcats', 'Rockets', 'Falcons',
+        'Golden Flashes', 'Bobcats', 'Rockets', 'Falcons', 'Commodores'
     ];
 
     for (const suffix of suffixes) {
@@ -76,8 +76,8 @@ export const fetchMatchupsForDate = async (dateStr: string): Promise<Matchup[]> 
             const comp = event.competitions?.[0];
             if (!comp) continue;
 
-            const homeTeam = comp.competitors?.find((c: any) => c.homeAway === 'home');
-            const awayTeam = comp.competitors?.find((c: any) => c.homeAway === 'away');
+            const homeTeam = comp.competitors?.find((c: { homeAway: string }) => c.homeAway === 'home');
+            const awayTeam = comp.competitors?.find((c: { homeAway: string }) => c.homeAway === 'away');
             if (!homeTeam || !awayTeam) continue;
 
             const gameDate = new Date(comp.date);

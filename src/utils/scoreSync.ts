@@ -9,8 +9,8 @@ export interface GameResult {
 
 // Fetch all game results for the tournament directly from ESPN API
 // This completely bypasses the AWS database, keeping the app fast and always up-to-date
-export const fetchLiveResults = async (): Promise<GameResult[]> => {
-    const results: GameResult[] = [];
+export const fetchLiveResults = async (): Promise<Record<string, GameResult[]>> => {
+    const resultsByDay: Record<string, GameResult[]> = {};
 
     // We only need to fetch dates up to today to save API calls
     const today = new Date();
@@ -24,20 +24,27 @@ export const fetchLiveResults = async (): Promise<GameResult[]> => {
 
     // Fetch matchups for all relevant tournament days
     const promises = [];
-    for (const dateStr of Object.values(TOURNAMENT_DAY_DATES)) {
+    const validDays: string[] = [];
+
+    for (const [dayName, dateStr] of Object.entries(TOURNAMENT_DAY_DATES)) {
         if (dateStr <= todayStr) {
             promises.push(fetchMatchupsForDate(dateStr));
+            validDays.push(dayName);
         }
     }
 
     const allMatchups = await Promise.all(promises);
 
-    for (const matchups of allMatchups) {
+    for (let i = 0; i < allMatchups.length; i++) {
+        const matchups = allMatchups[i];
+        const dayName = validDays[i];
+        const dayResults: GameResult[] = [];
+
         for (const m of matchups) {
             const isFinal = m.status === 'STATUS_FINAL';
 
             // Away team
-            results.push({
+            dayResults.push({
                 teamName: m.away,
                 status: m.status,
                 hasWon: m.awayWinner === true,
@@ -45,16 +52,17 @@ export const fetchLiveResults = async (): Promise<GameResult[]> => {
             });
 
             // Home team
-            results.push({
+            dayResults.push({
                 teamName: m.home,
                 status: m.status,
                 hasWon: m.homeWinner === true,
                 hasLost: isFinal && m.awayWinner === true
             });
         }
+        resultsByDay[dayName] = dayResults;
     }
 
-    return results;
+    return resultsByDay;
 };
 
 // No longer used, but kept for backwards compatibility if needed

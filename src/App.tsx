@@ -1,4 +1,5 @@
 import { Authenticator } from "@aws-amplify/ui-react";
+import type { AuthUser } from "aws-amplify/auth";
 import "@aws-amplify/ui-react/styles.css";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import MakePicks from "./components/MakePicks";
@@ -18,7 +19,7 @@ const App = () => {
   );
 };
 
-const MainContent = ({ signOut, user }: { signOut: () => void; user: any }) => {
+const MainContent = ({ signOut, user }: { signOut: () => void; user?: AuthUser }) => {
   return (
     <div
       style={{
@@ -46,7 +47,7 @@ const MainContent = ({ signOut, user }: { signOut: () => void; user: any }) => {
   );
 };
 
-const LandingPage = ({ user }: { user: any }) => {
+const LandingPage = ({ user }: { user?: AuthUser }) => {
   return (
     <div className="landing-page">
       <div className="landing-hero">

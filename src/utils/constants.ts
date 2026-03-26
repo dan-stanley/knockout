@@ -43,3 +43,10 @@ export const DAY_LOCK_TIMES: Record<string, string> = {
     "Final Four (Sat)": "2026-04-04T18:00:00-04:00",
     "Championship (Mon)": "2026-04-06T21:00:00-04:00",
 };
+
+export const ADMIN_EMAILS = [
+    "dcs5092@rit.edu",
+    "stanieldaniel@gmail.com",
+    "jkohut13@gmail.com",
+    "matt@freegoldwatch.com"
+];

@@ -11,7 +11,7 @@ const schema = a.schema({
     // Picks for all days (Stringified JSON: Record<string, string[]>)
     picksData: a.string(),
   }).authorization(allow => [
-    allow.owner(),
+    allow.ownerDefinedIn('ownerId').identityClaim('email'),
     allow.authenticated().to(['read']),
   ])
 });

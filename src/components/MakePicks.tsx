@@ -6,20 +6,23 @@ import { TEAM_LOGOS } from "../utils/teamLogos";
 import { getMatchupsForDay } from "../utils/matchups";
 import type { Matchup } from "../utils/matchups";
 import { syncScores, fetchLiveResults } from "../utils/scoreSync";
+import type { AuthUser } from "aws-amplify/auth";
+import type { GameResult } from "../utils/scoreSync";
 import { Link } from "react-router-dom";
 import "./MakePicks.css";
 
 const client = generateClient<Schema>();
+type EntryType = Schema["Entry"]["type"];
 
-const MakePicks = ({ user }: { user: any }) => {
-    const [entries, setEntries] = useState<any[]>([]);
+const MakePicks = ({ user }: { user?: AuthUser }) => {
+    const [entries, setEntries] = useState<EntryType[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedEntryId, setSelectedEntryId] = useState<string>("");
     const [newEntryName, setNewEntryName] = useState("");
 
     const [selectedDay, setSelectedDay] = useState<string>("");
     const [picks, setPicks] = useState<string[]>([]);
-    const [gameResults, setGameResults] = useState<any[]>([]);
+    const [gameResults, setGameResults] = useState<Record<string, GameResult[]>>({});
     const [dayMatchups, setDayMatchups] = useState<Matchup[]>([]);
     const [matchupsLoading, setMatchupsLoading] = useState(false);
 
@@ -31,11 +34,11 @@ const MakePicks = ({ user }: { user: any }) => {
             await syncScores();
 
             const [entriesData, liveResults] = await Promise.all([
-                client.models.Entry.list(),
+                client.models.Entry.list({ filter: { ownerId: { eq: userId } } }),
                 fetchLiveResults()
             ]);
             setEntries(entriesData.data || []);
-            setGameResults(liveResults || []);
+            setGameResults(liveResults || {});
             if (entriesData.data && entriesData.data.length > 0 && !selectedEntryId) {
                 setSelectedEntryId(entriesData.data[0].id);
             }
@@ -44,11 +47,11 @@ const MakePicks = ({ user }: { user: any }) => {
         } finally {
             setLoading(false);
         }
-    }, [userId]);
+    }, [userId, selectedEntryId]);
 
     useEffect(() => {
         fetchEntries();
-    }, []);
+    }, [fetchEntries]);
 
     const handleCreateEntry = async () => {
         if (!newEntryName.trim()) return;
@@ -74,23 +77,23 @@ const MakePicks = ({ user }: { user: any }) => {
         }
     };
 
-    const selectedEntry = entries.find((e: any) => e.id === selectedEntryId);
+    const selectedEntry = entries.find((e: EntryType) => e.id === selectedEntryId);
 
     // --- Day status logic ---
 
     // Is the pick window for this day closed? (games have started or are over)
-    const isDayLocked = (day: string): boolean => {
+    const isDayLocked = useCallback((day: string): boolean => {
         const lockTime = DAY_LOCK_TIMES[day];
         if (!lockTime) return false;
         return new Date() >= new Date(lockTime);
-    };
+    }, []);
 
     // Has this entry already submitted picks for this day?
-    const hasPicksForDay = (day: string): boolean => {
+    const hasPicksForDay = useCallback((day: string): boolean => {
         const picksRecords = selectedEntry?.picksData ? JSON.parse(selectedEntry.picksData) : {};
         const dayPicks = picksRecords[day] as string[] | undefined;
         return !!(dayPicks && dayPicks.length > 0);
-    };
+    }, [selectedEntry]);
 
     // Is a day eligible for picking? Must meet ALL conditions:
     // 1. Games haven't started yet (not locked by time)
@@ -99,7 +102,7 @@ const MakePicks = ({ user }: { user: any }) => {
     //    a. Time-locked (games already happened — treats rebuys/admin entries as settled)
     //    b. Has picks that are all settled (won or lost)
     //    OR it's the first day (Thursday)
-    const isDayPickable = (day: string): boolean => {
+    const isDayPickable = useCallback((day: string): boolean => {
         // Already locked by tipoff time
         if (isDayLocked(day)) return false;
 
@@ -122,13 +125,14 @@ const MakePicks = ({ user }: { user: any }) => {
         if (!prevPicks || prevPicks.length === 0) return false;
 
         return prevPicks.every((team: string) => {
-            const result = gameResults.find((r: any) => r.teamName === team);
+            const dayResults = gameResults[prevDay] || [];
+            const result = dayResults.find((r) => r.teamName === team);
             return result && (result.hasWon || result.hasLost);
         });
-    };
+    }, [gameResults, selectedEntry, isDayLocked]);
 
     // Get the day status label for display
-    const getDayStatus = (day: string): "pickable" | "editable" | "locked" | "locked_submitted" | "upcoming" => {
+    const getDayStatus = useCallback((day: string): "pickable" | "editable" | "locked" | "locked_submitted" | "upcoming" => {
         const hasPicks = hasPicksForDay(day);
         const locked = isDayLocked(day);
 
@@ -139,7 +143,7 @@ const MakePicks = ({ user }: { user: any }) => {
         if (isDayPickable(day)) return "pickable";
 
         return "upcoming";
-    };
+    }, [isDayPickable, hasPicksForDay, isDayLocked]);
 
     // Auto-select the first pickable day
     useEffect(() => {
@@ -162,31 +166,32 @@ const MakePicks = ({ user }: { user: any }) => {
             // Give picks their initial value if already selected but empty
             setPicks(pd[selectedDay]);
         }
-    }, [selectedEntry, gameResults, loading]);
+    }, [selectedEntry, loading, isDayPickable, hasPicksForDay, selectedDay, picks.length, gameResults]);
 
     // Auto-detect if entry needs buyback by checking if any previous picks lost
-    const needsBuyback = (): boolean => {
+    const needsBuyback = useCallback((): boolean => {
         const picksRecords = selectedEntry?.picksData ? JSON.parse(selectedEntry.picksData) : {};
         // Check all previous days' picks for losses
         for (const day of TOURNAMENT_DAYS) {
             const dayPicks = picksRecords[day] as string[] | undefined;
             if (!dayPicks) continue;
             for (const team of dayPicks) {
-                const result = gameResults.find((r: any) => r.teamName === team);
+                const dayResults = gameResults[day] || [];
+                const result = dayResults.find((r) => r.teamName === team);
                 if (result?.hasLost) return true;
             }
         }
         return false;
-    };
+    }, [gameResults, selectedEntry]);
 
-    const getRequiredPicksCount = (day: string) => {
+    const getRequiredPicksCount = useCallback((day: string) => {
         const buyback = needsBuyback();
         if (day === "Thursday") return 2;
         if (day === "Friday") return buyback ? 4 : 2;
         if (day === "Saturday") return buyback ? 5 : 1;
         if (day === "Sunday") return buyback ? 6 : 1;
         return 1;
-    };
+    }, [needsBuyback]);
 
     // Fetch matchups dynamically when selected day changes
     useEffect(() => {
@@ -203,7 +208,7 @@ const MakePicks = ({ user }: { user: any }) => {
     }, [selectedDay]);
 
     // Get filtered matchups (exclude teams used on OTHER days)
-    const getFilteredMatchups = () => {
+    const getFilteredMatchups = useCallback(() => {
         let otherDaysTeams: string[] = [];
         if (selectedEntry?.picksData) {
             const picksRecords = JSON.parse(selectedEntry.picksData);
@@ -221,11 +226,16 @@ const MakePicks = ({ user }: { user: any }) => {
         // Fallback for days with no API data: show winners list
         const winners = TEAMS.filter(team => {
             if (otherDaysTeams.includes(team)) return false;
-            const result = gameResults.find((r: any) => r.teamName === team);
+
+            let result;
+            for (const d of TOURNAMENT_DAYS) {
+                const res = (gameResults[d] || []).find((r) => r.teamName === team);
+                if (res) { result = res; break; }
+            }
             return result?.hasWon === true;
         });
         return winners;
-    };
+    }, [dayMatchups, selectedEntry, gameResults, selectedDay]);
 
     const filteredMatchups = getFilteredMatchups();
     const hasSchedule = Array.isArray(filteredMatchups) && filteredMatchups.length > 0 && typeof filteredMatchups[0] === 'object' && 'away' in filteredMatchups[0];
@@ -249,10 +259,10 @@ const MakePicks = ({ user }: { user: any }) => {
             }
 
             // Remove opponent if they're already picked (swap)
-            let newPicks = opponent ? picks.filter(p => p !== opponent) : [...picks];
+            const updatedPicks = opponent ? picks.filter(p => p !== opponent) : [...picks];
 
-            if (newPicks.length < required) {
-                setPicks([...newPicks, team]);
+            if (updatedPicks.length < required) {
+                setPicks([...updatedPicks, team]);
             } else {
                 alert(`You can only select ${required} teams for ${selectedDay}`);
             }
@@ -267,7 +277,7 @@ const MakePicks = ({ user }: { user: any }) => {
             return;
         }
 
-        const updateData: any = { id: selectedEntry.id };
+        const updateData: { id: string; picksData?: string; usedTeams?: string[] } = { id: selectedEntry.id };
         const currentData = selectedEntry.picksData ? JSON.parse(selectedEntry.picksData) : {};
         currentData[selectedDay] = picks;
 
@@ -315,11 +325,11 @@ const MakePicks = ({ user }: { user: any }) => {
                         <select value={selectedEntryId} onChange={e => {
                             const id = e.target.value;
                             setSelectedEntryId(id);
-                            const entry = entries.find((en: any) => en.id === id);
+                            const entry = entries.find((en: EntryType) => en.id === id);
                             const pd = entry?.picksData ? JSON.parse(entry.picksData) : {};
                             setPicks(pd[selectedDay] || []);
                         }}>
-                            {entries.map((e: any) => <option key={e.id} value={e.id}>{e.entryName} {e.isAlive ? '' : '(Eliminated)'}</option>)}
+                            {entries.map((e: EntryType) => <option key={e.id} value={e.id}>{e.entryName} {e.isAlive ? '' : '(Eliminated)'}</option>)}
                         </select>
                         <div className="entry-stats">
                             Buybacks Used: {selectedEntry?.buybacksUsed || 0} / 3
@@ -431,7 +441,8 @@ const MakePicks = ({ user }: { user: any }) => {
                                     const pd = selectedEntry?.picksData ? JSON.parse(selectedEntry.picksData) : {};
                                     const dayPicks = (pd[selectedDay] || []) as string[];
                                     return dayPicks.map((team: string) => {
-                                        const result = gameResults.find((r: any) => r.teamName === team);
+                                        const dayResults = gameResults[selectedDay] || [];
+                                        const result = dayResults.find((r) => r.teamName === team);
                                         let statusClass = "";
                                         if (result?.hasWon) statusClass = "pick-won-card";
                                         if (result?.hasLost) statusClass = "pick-lost-card";

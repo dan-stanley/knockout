@@ -3,14 +3,16 @@ import { generateClient } from "aws-amplify/data";
 import type { Schema } from "../../amplify/data/resource";
 import { TOURNAMENT_DAYS } from "../utils/constants";
 import { syncScores, fetchLiveResults } from "../utils/scoreSync";
+import type { GameResult } from "../utils/scoreSync";
 import { Link } from "react-router-dom";
 import "./GridView.css";
 
 const client = generateClient<Schema>();
+type EntryType = Schema["Entry"]["type"];
 
 const GridView = () => {
-    const [entries, setEntries] = useState<any[]>([]);
-    const [results, setResults] = useState<any[]>([]);
+    const [entries, setEntries] = useState<EntryType[]>([]);
+    const [results, setResults] = useState<Record<string, GameResult[]>>({});
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -24,7 +26,7 @@ const GridView = () => {
                     fetchLiveResults()
                 ]);
                 setEntries(entryData);
-                setResults(liveResults || []);
+                setResults(liveResults || {});
             } catch (e) {
                 console.error(e);
             } finally {
@@ -56,7 +58,7 @@ const GridView = () => {
                                 <td colSpan={TOURNAMENT_DAYS.length + 2}>No entries found.</td>
                             </tr>
                         ) : null}
-                        {entries.map((entry: any) => (
+                        {entries.map((entry: EntryType) => (
                             <tr key={entry.id} className={!entry.isAlive ? "eliminated-row" : ""}>
                                 <td className="entry-name-cell">
                                     {entry.entryName}
@@ -76,7 +78,8 @@ const GridView = () => {
                                             {picks && picks.length > 0 ? (
                                                 <div className="picks-list">
                                                     {picks.map((p: string) => {
-                                                        const res = results.find((r: any) => r.teamName === p);
+                                                        const dayResults = results[day] || [];
+                                                        const res = dayResults.find((r) => r.teamName === p);
                                                         let statusClass = "";
                                                         if (res?.hasWon) statusClass = "pick-won";
                                                         if (res?.hasLost) statusClass = "pick-lost";
