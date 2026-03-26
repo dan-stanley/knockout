@@ -12,7 +12,7 @@ const schema = a.schema({
     picksData: a.string(),
   }).authorization(allow => [
     allow.ownerDefinedIn('ownerId').identityClaim('email'),
-    allow.authenticated().to(['read']),
+    allow.authenticated(),
   ])
 });
 
