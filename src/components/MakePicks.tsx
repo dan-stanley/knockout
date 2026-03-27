@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { generateClient } from "aws-amplify/data";
 import type { Schema } from "../../amplify/data/resource";
 import { TEAMS, TOURNAMENT_DAYS, DAY_LOCK_TIMES } from "../utils/constants";
@@ -78,6 +78,19 @@ const MakePicks = ({ user }: { user?: AuthUser }) => {
     };
 
     const selectedEntry = entries.find((e: EntryType) => e.id === selectedEntryId);
+
+    const otherDaysTeams = useMemo(() => {
+        let teams: string[] = [];
+        if (selectedEntry?.picksData) {
+            const picksRecords = JSON.parse(selectedEntry.picksData);
+            for (const day of Object.keys(picksRecords)) {
+                if (day !== selectedDay) {
+                    teams = [...teams, ...picksRecords[day]];
+                }
+            }
+        }
+        return teams;
+    }, [selectedEntry, selectedDay]);
 
     // --- Day status logic ---
 
@@ -209,24 +222,10 @@ const MakePicks = ({ user }: { user?: AuthUser }) => {
 
     // Get filtered matchups (exclude teams used on OTHER days)
     const getFilteredMatchups = useCallback(() => {
-        let otherDaysTeams: string[] = [];
-        if (selectedEntry?.picksData) {
-            const picksRecords = JSON.parse(selectedEntry.picksData);
-            for (const day of Object.keys(picksRecords)) {
-                if (day !== selectedDay) {
-                    otherDaysTeams = [...otherDaysTeams, ...picksRecords[day]];
-                }
-            }
-        }
-
-        if (dayMatchups.length > 0) {
-            return dayMatchups.filter(m => !otherDaysTeams.includes(m.away) && !otherDaysTeams.includes(m.home));
-        }
+        if (dayMatchups.length > 0) return dayMatchups;
 
         // Fallback for days with no API data: show winners list
         const winners = TEAMS.filter(team => {
-            if (otherDaysTeams.includes(team)) return false;
-
             let result;
             for (const d of TOURNAMENT_DAYS) {
                 const res = (gameResults[d] || []).find((r) => r.teamName === team);
@@ -235,7 +234,7 @@ const MakePicks = ({ user }: { user?: AuthUser }) => {
             return result?.hasWon === true;
         });
         return winners;
-    }, [dayMatchups, selectedEntry, gameResults, selectedDay]);
+    }, [dayMatchups, gameResults]);
 
     const filteredMatchups = getFilteredMatchups();
     const hasSchedule = Array.isArray(filteredMatchups) && filteredMatchups.length > 0 && typeof filteredMatchups[0] === 'object' && 'away' in filteredMatchups[0];
@@ -264,7 +263,9 @@ const MakePicks = ({ user }: { user?: AuthUser }) => {
             if (updatedPicks.length < required) {
                 setPicks([...updatedPicks, team]);
             } else {
-                alert(`You can only select ${required} teams for ${selectedDay}`);
+                // If maximum picks reached, smoothly drop the oldest pick to accept the new selection
+                const shiftedPicks = updatedPicks.slice(1);
+                setPicks([...shiftedPicks, team]);
             }
         }
     };
@@ -307,7 +308,7 @@ const MakePicks = ({ user }: { user?: AuthUser }) => {
         <div className="make-picks-container">
             <h2>Make Your Picks</h2>
 
-            {entries.length < 3 && (
+            {entries.length < 3 && new Date() < new Date(DAY_LOCK_TIMES["Thursday"] || 0) && (
                 <div className="create-entry">
                     <input
                         value={newEntryName}
@@ -394,16 +395,16 @@ const MakePicks = ({ user }: { user?: AuthUser }) => {
                                         <div key={m.gameId || `${m.away}-${m.home}`} className="matchup-card">
                                             <div className="matchup-time">{m.time || ''}</div>
                                             <div
-                                                className={`matchup-team away ${picks.includes(m.away) ? 'picked' : ''}`}
-                                                onClick={() => handleTogglePick(m.away)}
+                                                className={`matchup-team away ${picks.includes(m.away) ? 'picked' : ''} ${otherDaysTeams.includes(m.away) ? 'disabled-team' : ''}`}
+                                                onClick={() => !otherDaysTeams.includes(m.away) && handleTogglePick(m.away)}
                                             >
                                                 {TEAM_LOGOS[m.away] && <img src={TEAM_LOGOS[m.away]} alt={m.away} className="matchup-logo" />}
                                                 <span>{m.away}</span>
                                             </div>
                                             <div className="matchup-at">@</div>
                                             <div
-                                                className={`matchup-team home ${picks.includes(m.home) ? 'picked' : ''}`}
-                                                onClick={() => handleTogglePick(m.home)}
+                                                className={`matchup-team home ${picks.includes(m.home) ? 'picked' : ''} ${otherDaysTeams.includes(m.home) ? 'disabled-team' : ''}`}
+                                                onClick={() => !otherDaysTeams.includes(m.home) && handleTogglePick(m.home)}
                                             >
                                                 {TEAM_LOGOS[m.home] && <img src={TEAM_LOGOS[m.home]} alt={m.home} className="matchup-logo" />}
                                                 <span>{m.home}</span>
@@ -416,8 +417,8 @@ const MakePicks = ({ user }: { user?: AuthUser }) => {
                                     {(filteredMatchups as string[]).map((team: string) => (
                                         <div
                                             key={team}
-                                            className={`team-card ${picks.includes(team) ? "selected" : ""}`}
-                                            onClick={() => handleTogglePick(team)}
+                                            className={`team-card ${picks.includes(team) ? "selected" : ""} ${otherDaysTeams.includes(team) ? 'disabled-team' : ''}`}
+                                            onClick={() => !otherDaysTeams.includes(team) && handleTogglePick(team)}
                                         >
                                             {TEAM_LOGOS[team] && <img src={TEAM_LOGOS[team]} alt={team} className="team-logo" />}
                                             <span className="team-name">{team}</span>

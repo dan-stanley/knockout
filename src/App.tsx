@@ -33,7 +33,7 @@ const MainContent = ({ signOut, user }: { signOut: () => void; user?: AuthUser }
         <Routes>
           <Route path="/" element={<LandingPage user={user} />} />
           <Route path="/picks" element={<MakePicks user={user} />} />
-          <Route path="/standings" element={<GridView />} />
+          <Route path="/standings" element={<GridView user={user} />} />
           <Route path="/admin" element={<Admin />} />
         </Routes>
       </div>
